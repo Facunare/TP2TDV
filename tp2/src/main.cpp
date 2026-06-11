@@ -137,7 +137,6 @@ vector<vector<int>> heuristica_mayor_demanda_primero(const GAPInstance& instance
     return asignacion;
 }
 
-
 vector<vector<int>> heuristica_mas_cercano(const GAPInstance& instance) {
     vector<vector<int>> asignacion(instance.m);
     vector<double> capacidadRestante = instance.capacidades;
