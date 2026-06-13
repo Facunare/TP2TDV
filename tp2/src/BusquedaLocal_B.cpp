@@ -7,36 +7,33 @@
 using namespace std;
 
 /*
- * OPERADOR SWAP (BÚSQUEDA LOCAL)
- * Intercambia los depósitos asignados entre dos vendedores distintos
- * si eso mejora la distancia total y respeta las capacidades.
- */
+    Operador swap:
+    intenta intercambiar los depósitos de dos vendedores.
+    El cambio se aplica solo si reduce el costo total y respeta las capacidades.
+*/
+
 vector<vector<int>> operador_swap(const GAPInstance& instance, vector<vector<int>> asignacion_inicial) {
     int m = instance.m;
     int n = instance.n;
 
-    // ========================================================================
-    // 1. "Construir una solución s* en S" (Adaptación de la matriz inicial)
-    // ========================================================================
-    // Pasamos de matriz a un vector 1D para saber en O(1) en qué depósito está cada vendedor.
-    vector<int> deposito_de(n, -1);
-    vector<double> cap_restante = instance.capacidades;
+    // deposito_de[j] indica en qué depósito está asignado el vendedor j.
+    // Si vale -1, el vendedor no está asignado.
 
+    vector<int> deposito_de(n, -1);
+    vector<double> cap_restante = instance.capacidades; // Copiamos las capacidades para ir actualizando el espacio disponible.
+
+    // Construimos deposito_de y calculamos la capacidad restante inicial.
     for (int i = 0; i < m; i++) {
         for (int j : asignacion_inicial[i]) {
             deposito_de[j] = i;
-            // Calculamos cuánto espacio libre le queda a cada depósito
             cap_restante[i] -= instance.demandas[i][j];
         }
     }
 
-    // ========================================================================
-    // 2 y 4. "repetir" y "mientras exista s en N(s*) tal que f(s) < f(s*)"
-    // ========================================================================
-    bool mejora = true; // Forzamos la entrada al ciclo la primera vez
-    
+    bool mejora = true; 
+    // Repetimos mientras encontremos algún intercambio que mejore la solución.
     while (mejora) {
-        mejora = false; // Asumimos que no hay mejora hasta que demostremos lo contrario
+        mejora = false;
         
         // Exploramos el Vecindario N(s*): probamos todos los pares de vendedores j1 y j2
         for (int j1 = 0; j1 < n; j1++) {
@@ -50,25 +47,21 @@ vector<vector<int>> operador_swap(const GAPInstance& instance, vector<vector<int
                     continue; 
                 }
 
-                // ========================================================================
-                // 3. "elegir s en N(s*) tal que f(s) < f(s*)..."
-                // ========================================================================
-                // A. CHEQUEO DE MEJORA: ¿Baja el costo si los cruzamos?
-                double costo_actual = instance.costos[i1][j1] + instance.costos[i2][j2];
-                double nuevo_costo = instance.costos[i2][j1] + instance.costos[i1][j2];
+                // elegir s en N(s*) tal que f(s) < f(s*)...
+                double costo_actual = instance.costos[i1][j1] + instance.costos[i2][j2]; // Costo actual de mantener a cada vendedor en su depósito.
+                double nuevo_costo = instance.costos[i2][j1] + instance.costos[i1][j2]; // Costo si intercambiamos los depósitos de ambos vendedores.
 
+                 // Solo seguimos si el intercambio mejora el costo.
                 if (nuevo_costo < costo_actual) {
                     
-                    // B. CHEQUEO DE FACTIBILIDAD: ¿Entran en los nuevos depósitos?
                     // La capacidad necesaria en i2 es la demanda de j1 que entra, menos la de j2 que sale.
                     double cap_req_i2 = instance.demandas[i2][j1] - instance.demandas[i2][j2];
                     // La capacidad necesaria en i1 es la demanda de j2 que entra, menos la de j1 que sale.
                     double cap_req_i1 = instance.demandas[i1][j2] - instance.demandas[i1][j1];
 
-                    // Verificamos que las capacidades remanentes soporten el cambio
+                    // Verificamos que ambos depósitos tengan capacidad suficiente.
                     if (cap_restante[i2] >= cap_req_i2 && cap_restante[i1] >= cap_req_i1) {
                         
-                        // "... y actualizar s* = s"
                         // Aplicamos el intercambio
                         deposito_de[j1] = i2;
                         deposito_de[j2] = i1;
@@ -77,8 +70,8 @@ vector<vector<int>> operador_swap(const GAPInstance& instance, vector<vector<int
                         cap_restante[i1] -= cap_req_i1;
                         cap_restante[i2] -= cap_req_i2;
                         
-                        mejora = true; // Encontramos una mejora, marcamos la bandera para repetir el while
-                        break; // FIRST IMPROVEMENT: Rompemos el ciclo interior para aplicar la mejora rápido
+                        mejora = true; 
+                        break; // FIRST IMPROVEMENT
                     }
                 }
             }
@@ -86,9 +79,9 @@ vector<vector<int>> operador_swap(const GAPInstance& instance, vector<vector<int
                 break; // Rompemos el ciclo exterior para reiniciar la exploración desde la nueva solución s*
             }
         }
-    } // Fin del while: Si 'mejora' es false, llegamos a un mínimo local y termina la búsqueda.
+    }
 
-    // Reconstruimos la matriz de asignación final para el output
+    // Reconstruimos la asignación final en formato vector de depósitos.
     vector<vector<int>> nueva_asignacion(m);
     for (int j = 0; j < n; j++) {
         if (deposito_de[j] != -1) {

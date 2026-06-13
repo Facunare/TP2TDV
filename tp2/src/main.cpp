@@ -5,22 +5,9 @@
 #include <stdexcept>
 #include <algorithm>
 #include <limits>
-#include "HeursiticaConstructiva_A.cpp"
-#include "HeursiticaConstructiva_B.cpp"
-#include "BusquedaLocal_A.cpp"
-#include "BusquedaLocal_B.cpp"
-#include "Metaheuristica.cpp"
+#include "GAP.h"
 
 using namespace std;
-
-struct GAPInstance {
-    int m; // cantidad de depositos
-    int n; // cantidad de vendedores
-
-    vector<vector<double>> costos;     // costos[i][j] = costo/distancia deposito i -> vendedor j
-    vector<vector<double>> demandas;   // demandas[i][j] = demanda si vendedor j va al deposito i
-    vector<double> capacidades;        // capacidades[i] = capacidad del deposito i
-};
 
 GAPInstance readInstance(const string& filename) {
     ifstream file(filename);
@@ -93,66 +80,113 @@ void writeSolution(const string& outputFilename, const vector<vector<int>>& asig
     }
 }
 
-/*
-    Esta funcion NO es una heuristica.
-    Solo crea una solucion vacia para que el programa compile y genere un output valido
-    en cuanto al formato.
+double calcularCosto(const GAPInstance& instance, const vector<vector<int>>& asignacion) {
+    double cmax = 0;
 
-    Mas adelante, reemplazar esta funcion por algo como:
+    for (int i = 0; i < instance.m; i++) {
+        for (int j = 0; j < instance.n; j++) {
+            cmax = max(cmax, instance.costos[i][j]);
+        }
+    }
 
-    vector<vector<int>> asignacion = heuristicaConstructiva1(instance);
+    double penalizacion = 3 * cmax;
+    double costoTotal = 0;
 
-    o:
+    vector<bool> asignado(instance.n, false);
 
-    vector<vector<int>> asignacion = metaheuristica(instance);
-*/
+    for (int i = 0; i < instance.m; i++) {
+        for (int j : asignacion[i]) {
+            costoTotal += instance.costos[i][j];
+            asignado[j] = true;
+        }
+    }
 
+    for (int j = 0; j < instance.n; j++) {
+        if (!asignado[j]) {
+            costoTotal += penalizacion;
+        }
+    }
 
-
-
+    return costoTotal;
+}
 
 int main(int argc, char** argv) {
-    string inputFilename = "instances/gap/gap_a/a05100.txt";
-    string outputFilename = "instances/gap/gap_a/a05100 salida.txt";
-
-    /*
-        Si se pasan argumentos por consola, se usan esos.
-        Ejemplo:
-        ./main instances/gap/gap_a/a05100.txt "instances/gap/gap_a/a05100 salida.txt"
-    */
-    if (argc >= 2) {
-        inputFilename = argv[1];
+    if (argc < 4) {
+        cerr << "Uso:" << endl;
+        cerr << "./main <input> <output> <algoritmo> [iteraciones] [rcl_size]" << endl;
+        cerr << endl;
+        cerr << "Algoritmos disponibles:" << endl;
+        cerr << "  cercano" << endl;
+        cerr << "  demanda" << endl;
+        cerr << "  cercano_relocate" << endl;
+        cerr << "  demanda_relocate" << endl;
+        cerr << "  cercano_swap" << endl;
+        cerr << "  demanda_swap" << endl;
+        cerr << "  grasp" << endl;
+        return 1;
     }
 
-    if (argc >= 3) {
-        outputFilename = argv[2];
+    string inputFilename = argv[1];
+    string outputFilename = argv[2];
+    string algoritmo = argv[3];
+
+    int iteraciones = 100;
+    int rcl_size = 3;
+
+    if (argc >= 5) {
+        iteraciones = stoi(argv[4]);
     }
 
-    cout << "Reading file " << inputFilename << endl;
+    if (argc >= 6) {
+        rcl_size = stoi(argv[5]);
+    }
 
     try {
         GAPInstance instance = readInstance(inputFilename);
 
-        cout << "Instancia leida correctamente." << endl;
-        cout << "Depositos: " << instance.m << endl;
-        cout << "Vendedores: " << instance.n << endl;
+        vector<vector<int>> asignacion;
 
-        /*
-            ACA DESPUES VA LA MAGIA.
+        auto start = chrono::high_resolution_clock::now();
 
-            Por ahora dejamos una solucion vacia.
-            Mas adelante reemplazar esta linea por la heuristica correspondiente:
+        if (algoritmo == "cercano") {
+            asignacion = heuristica_mas_cercano(instance);
+        }
+        else if (algoritmo == "demanda") {
+            asignacion = heuristica_mayor_demanda_primero(instance);
+        }
+        else if (algoritmo == "cercano_relocate") {
+            asignacion = operador_relocate(instance, heuristica_mas_cercano(instance));
+        }
+        else if (algoritmo == "demanda_relocate") {
+            asignacion = operador_relocate(instance, heuristica_mayor_demanda_primero(instance));
+        }
+        else if (algoritmo == "cercano_swap") {
+            asignacion = operador_swap(instance, heuristica_mas_cercano(instance));
+        }
+        else if (algoritmo == "demanda_swap") {
+            asignacion = operador_swap(instance, heuristica_mayor_demanda_primero(instance));
+        }
+        else if (algoritmo == "grasp") {
+            asignacion = metaheuristica_GRASP(instance, iteraciones, rcl_size);
+        }
+        else {
+            cerr << "Algoritmo no reconocido: " << algoritmo << endl;
+            return 1;
+        }
 
-            vector<vector<int>> asignacion = heuristicaConstructiva1(instance);
-            vector<vector<int>> asignacion = heuristicaConstructiva2(instance);
-            vector<vector<int>> asignacion = busquedaLocal(instance, solucionInicial);
-            vector<vector<int>> asignacion = metaheuristica(instance);
-        */
-        vector<vector<int>> asignacion = heuristica_mayor_demanda(instance);
+        auto end = chrono::high_resolution_clock::now();
+
+        double tiempo = chrono::duration<double>(end - start).count();
+        double costo = calcularCosto(instance, asignacion);
 
         writeSolution(outputFilename, asignacion);
 
-        cout << "Solucion escrita en " << outputFilename << endl;
+        cout << inputFilename << ","
+             << algoritmo << ","
+             << costo << ","
+             << tiempo << ","
+             << iteraciones << ","
+             << rcl_size << endl;
     }
     catch (const exception& e) {
         cerr << "Error: " << e.what() << endl;

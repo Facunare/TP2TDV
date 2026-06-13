@@ -8,10 +8,7 @@
 #include <utility>
 #include <cstdlib>
 #include <random>
-#include "main.cpp"
-#include "HeuristicaConstructiva_A.cpp"
-#include "BusquedaLocal_A.cpp"
-
+#include "GAP.h"
 using namespace std;
 
 void selectionSort(vector<pair<double,int>>& v) {
@@ -122,8 +119,11 @@ vector<vector<int>> GreedyRandomized(const GAPInstance& instance, int rcl_size){
         mergeSort(costos_ordenados, 0, costos_ordenados.size() - 1);
 
         vector<pair<double, int>> rcl = armadoRCL(costos_ordenados, rcl_size, capacidadRestante, instance.demandas, j);
-        if(rcl.empty()){
-            return GreedyRandomized(instance, rcl_size); // Si no hay opciones en el RCL, reiniciar la construcción
+        // if(rcl.empty()){
+        //     return GreedyRandomized(instance, rcl_size); // Si no hay opciones en el RCL, reiniciar la construcción
+        // }
+        if (rcl.empty()) {
+            continue;
         }
         int indice_random = randomizar_indice(rcl.size());
         int eleccion = rcl[indice_random].second;
@@ -132,19 +132,6 @@ vector<vector<int>> GreedyRandomized(const GAPInstance& instance, int rcl_size){
     }
 
     return asignacion;
-}
-
-
-double calcularCosto(const GAPInstance& instance, const vector<vector<int>>& solucion){
-    double costo_total = 0.0;
-
-    for(int i=0; i<instance.m; i++){
-        for(int j : solucion[i]){
-            costo_total += instance.costos[i][j];
-        }
-    }
-
-    return costo_total;
 }
 
 

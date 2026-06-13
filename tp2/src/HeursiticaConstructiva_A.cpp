@@ -10,15 +10,21 @@
 using namespace std;
 
 vector<vector<int>> heuristica_mas_cercano(const GAPInstance& instance) {
-    vector<vector<int>> asignacion(instance.m);
+    vector<vector<int>> asignacion(instance.m); // asignacion[i] guarda los vendedores asignados al depósito i
     vector<double> capacidadRestante = instance.capacidades;
 
+    // Lista de vendedores para iterar
     vector<int> vendedores(instance.n);
+    for (int j = 0; j < instance.n; j++) {
+        vendedores[j] = j;
+    }
 
+    // Recorremos cada vendedor en el orden original
     for (int j : vendedores) {
         int mejorDeposito = -1;
         double mejorCosto = numeric_limits<double>::infinity();
 
+        // Buscamos el depósito más cercano que tenga capacidad suficiente
         for (int i = 0; i < instance.m; i++) {
             if (instance.demandas[i][j] <= capacidadRestante[i]) {
                 if (instance.costos[i][j] < mejorCosto) {
@@ -27,11 +33,14 @@ vector<vector<int>> heuristica_mas_cercano(const GAPInstance& instance) {
                 }
             }
         }
-
+        // Si encontramos un depósito factible, asignamos el vendedor y actualizamos la capacidad restante
         if (mejorDeposito != -1) {
             asignacion[mejorDeposito].push_back(j);
             capacidadRestante[mejorDeposito] -= instance.demandas[mejorDeposito][j];
         }
+
+        // Si mejorDeposito queda en -1, el vendedor queda sin asignar.
+        // La penalización se calcula después al evaluar el costo total.
     }
 
     return asignacion;
