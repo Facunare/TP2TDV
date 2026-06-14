@@ -155,7 +155,7 @@ vector<vector<int>> metaheuristica_GRASP(const GAPInstance& instance,int n, int 
 }
 
 
-'''
+/* 
 Uso de IA:
 
 - Implementación de algoritmos de ordenamiento (Selection Sort y Merge Sort) para ordenar los costos de asignación.
@@ -164,4 +164,4 @@ Uso de IA:
 - Arreglo del caso en que no se puede asignar un vendedor a ningún depósito de forma factible (RCL.size() == 0). Evitar que se haga una recursión infinita al reiniciar la construcción.
 
 chat: https://share.gemini.google/wOHoWd2hsfGXv 
-'''
+*/

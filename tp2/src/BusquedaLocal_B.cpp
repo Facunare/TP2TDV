@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 #include <stdexcept>
-
+#include "GAP.h"
 using namespace std;
 
 /*

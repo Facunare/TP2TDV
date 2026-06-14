@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <limits>
-#include "main.cpp"
+#include "GAP.h"
 
 using namespace std;
 
